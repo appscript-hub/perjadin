@@ -767,12 +767,46 @@ export default function App() {
 
   // --- DATA GRAPH CALCULATIONS & STATISTICS ---
   const hitungTotalRealisasiAnggaran = () => {
-    return perjalananList.reduce((acc, cr) => acc + cr.totalUang, 0);
+    return perjalananList.reduce((acc, cr) => acc + (cr.totalUang || 0), 0);
+  };
+
+  const hitungTotalUangHarian = () => {
+    return perjalananList.reduce((acc, item) => {
+      const harian = item.isSplitHarian
+        ? (item.hariDest1 || 0) * (item.tarifDest1 || 0) +
+          (item.hariDest2 || 0) * (item.tarifDest2 || 0) +
+          (item.hariDest3 || 0) * (item.tarifDest3 || 0)
+        : (item.hari || 0) * (item.tarif || 0);
+      return acc + harian;
+    }, 0);
+  };
+
+  const hitungTotalBBM = () => {
+    return perjalananList.reduce((acc, item) => {
+      const bbmSum = item.rincianBBM ? item.rincianBBM.reduce((sum, b) => sum + (b.totalBeli || 0), 0) : 0;
+      return acc + bbmSum;
+    }, 0);
+  };
+
+  const hitungTotalTransport = () => {
+    return perjalananList.reduce((acc, item) => {
+      const trSum = item.rincianTransport ? item.rincianTransport.reduce((sum, t) => {
+        return sum + (t.biayaTol || 0) + (t.biayaTravel || 0) + (t.biayaKereta || 0) + (t.biayaPesawat || 0) + (t.biayaFerry || 0);
+      }, 0) : 0;
+      return acc + trSum;
+    }, 0);
+  };
+
+  const hitungTotalAkomodasi = () => {
+    return perjalananList.reduce((acc, item) => {
+      const hotelSum = item.rincianHotel ? item.rincianHotel.reduce((sum, h) => sum + (h.total || 0), 0) : 0;
+      return acc + hotelSum;
+    }, 0);
   };
 
   const hitungRataRataHariAlkis = () => {
     if (perjalananList.length === 0) return 0;
-    const totals = perjalananList.reduce((acc, cr) => acc + cr.hari, 0);
+    const totals = perjalananList.reduce((acc, cr) => acc + (cr.hari || 0), 0);
     return parseFloat((totals / perjalananList.length).toFixed(1));
   };
 
@@ -861,50 +895,92 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 mt-4 space-y-4">
 
         {/* TOP METRICS SUMMARY BENTO BLOCKS */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 rounded-xl p-3.5 shadow-xs border-t-4 border-t-emerald-500 relative overflow-hidden group hover:shadow-sm transition-all duration-300">
-            <div className="absolute top-2 right-2 p-1.5 bg-emerald-50 rounded-lg text-emerald-600">
-              <Coins className="w-4 h-4" />
+        <div id="top-metrics-container" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          
+          {/* Card 1: Total Realisasi Anggaran */}
+          <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-xl p-3 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-emerald-800/20">
+            <div className="absolute top-2 right-2 p-1.5 bg-white/20 rounded-lg text-white">
+              <Coins className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Total Realisasi Anggaran</div>
-            <div className="text-xl font-black text-emerald-600 font-mono mt-1.5">
+            <div className="text-[9px] font-extrabold text-emerald-100 uppercase tracking-wider">Total Realisasi Anggaran</div>
+            <div className="text-xs sm:text-sm font-black text-white font-mono mt-2 truncate">
               Rp {hitungTotalRealisasiAnggaran().toLocaleString("id-ID")}
             </div>
-            <p className="text-[10.5px] text-slate-500 font-semibold mt-1">Selesai ter-audit buku SPPD</p>
+            <p className="text-[9.5px] text-emerald-50/80 font-medium mt-1 truncate">Selesai ter-audit buku SPPD</p>
           </div>
 
-          <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 rounded-xl p-3.5 shadow-xs border-t-4 border-t-sky-500 relative overflow-hidden group hover:shadow-sm transition-all duration-300">
-            <div className="absolute top-2 right-2 p-1.5 bg-sky-50 rounded-lg text-sky-600">
-              <FileCheck className="w-4 h-4" />
+          {/* Card 2: Jumlah Perjalanan */}
+          <div className="bg-gradient-to-br from-sky-500 to-blue-600 text-white rounded-xl p-3 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-sky-700/20">
+            <div className="absolute top-2 right-2 p-1.5 bg-white/20 rounded-lg text-white">
+              <FileCheck className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Jumlah Log Perjalanan</div>
-            <div className="text-xl font-black text-slate-900 font-mono mt-1.5">
-              {perjalananList.length} <span className="text-[11px] text-slate-500 font-sans font-medium">Sertifikat</span>
+            <div className="text-[9px] font-extrabold text-sky-100 uppercase tracking-wider">Jumlah Perjalanan</div>
+            <div className="text-xs sm:text-sm font-black text-white font-mono mt-2 truncate">
+              {perjalananList.length} <span className="text-[10px] text-sky-100 font-sans font-semibold">Perjalanan</span>
             </div>
-            <p className="text-[10.5px] text-slate-500 font-semibold mt-1">Aktif di kelola sistem</p>
+            <p className="text-[9.5px] text-sky-50/80 font-medium mt-1 truncate font-sans">Aktif di kelola sistem</p>
           </div>
 
-          <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 rounded-xl p-3.5 shadow-xs border-t-4 border-t-amber-500 relative overflow-hidden group hover:shadow-sm transition-all duration-300">
-            <div className="absolute top-2 right-2 p-1.5 bg-amber-50 rounded-lg text-amber-600">
-              <Users className="w-4 h-4" />
+          {/* Card 3: Pegawai Teregistrasi */}
+          <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-xl p-3 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-amber-700/20">
+            <div className="absolute top-2 right-2 p-1.5 bg-white/20 rounded-lg text-white">
+              <Users className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Karyawan Terregistrasi</div>
-            <div className="text-xl font-black text-slate-900 font-mono mt-1.5">
-              {pegawaiList.length} <span className="text-[11px] text-slate-500 font-sans font-medium">Pegawai</span>
+            <div className="text-[9px] font-extrabold text-amber-100 uppercase tracking-wider font-sans">Pegawai Teregistrasi</div>
+            <div className="text-xs sm:text-sm font-black text-white font-mono mt-2 truncate">
+              {pegawaiList.length} <span className="text-[10px] text-amber-100 font-sans font-semibold">Pegawai</span>
             </div>
-            <p className="text-[10.5px] text-slate-500 font-semibold mt-1">Tersedia dalam manifest</p>
+            <p className="text-[9.5px] text-amber-50/80 font-medium mt-1 truncate font-sans">tersedia dalam tabel pegawai</p>
           </div>
 
-          <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 rounded-xl p-3.5 shadow-xs border-t-4 border-t-indigo-500 relative overflow-hidden group hover:shadow-sm transition-all duration-300">
-            <div className="absolute top-2 right-2 p-1.5 bg-indigo-50 rounded-lg text-indigo-600">
-              <MapPin className="w-4 h-4" />
+          {/* Card 4: akumulasi data uang harian */}
+          <div className="bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl p-3 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-indigo-700/20">
+            <div className="absolute top-2 right-2 p-1.5 bg-white/20 rounded-lg text-white">
+              <Database className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Rata-Rata Lama Dinas</div>
-            <div className="text-xl font-black text-indigo-600 font-mono mt-1.5">
-              {hitungRataRataHariAlkis()} <span className="text-[11px] text-slate-500 font-sans font-medium">Hari / SPPD</span>
+            <div className="text-[9px] font-extrabold text-indigo-100 uppercase tracking-wider">Akumulasi Uang Harian</div>
+            <div className="text-xs sm:text-sm font-black text-white font-mono mt-2 truncate">
+              Rp {hitungTotalUangHarian().toLocaleString("id-ID")}
             </div>
-            <p className="text-[10.5px] text-slate-500 font-semibold mt-1">Alokasi operasional harian</p>
+            <p className="text-[9.5px] text-indigo-50/80 font-medium mt-1 truncate">akumulasi data uang harian</p>
           </div>
+
+          {/* Card 5: Akumulasi Biaya BBM */}
+          <div className="bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-xl p-3 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-emerald-700/20">
+            <div className="absolute top-2 right-2 p-1.5 bg-white/20 rounded-lg text-white">
+              <Flame className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-[9px] font-extrabold text-emerald-100 uppercase tracking-wider">Akumulasi Biaya BBM</div>
+            <div className="text-xs sm:text-sm font-black text-white font-mono mt-2 truncate">
+              Rp {hitungTotalBBM().toLocaleString("id-ID")}
+            </div>
+            <p className="text-[9.5px] text-emerald-50/80 font-medium mt-1 truncate">Total pembelian bbm</p>
+          </div>
+
+          {/* Card 6: Akumulasi Transportasi */}
+          <div className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-3 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-rose-700/20">
+            <div className="absolute top-2 right-2 p-1.5 bg-white/20 rounded-lg text-white">
+              <Plane className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-[9px] font-extrabold text-rose-100 uppercase tracking-wider">Akumulasi Transportasi</div>
+            <div className="text-xs sm:text-sm font-black text-white font-mono mt-2 truncate">
+              Rp {hitungTotalTransport().toLocaleString("id-ID")}
+            </div>
+            <p className="text-[9.5px] text-rose-50/80 font-medium mt-1 truncate">Bensin, tol, travel, tiket</p>
+          </div>
+
+          {/* Card 7: Akumulasi Akomodasi */}
+          <div className="bg-gradient-to-br from-cyan-500 to-blue-500 text-white rounded-xl p-3 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-cyan-700/20">
+            <div className="absolute top-2 right-2 p-1.5 bg-white/20 rounded-lg text-white">
+              <Home className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-[9px] font-extrabold text-cyan-100 uppercase tracking-wider">Akumulasi Akomodasi</div>
+            <div className="text-xs sm:text-sm font-black text-white font-mono mt-2 truncate">
+              Rp {hitungTotalAkomodasi().toLocaleString("id-ID")}
+            </div>
+            <p className="text-[9.5px] text-cyan-50/80 font-medium mt-1 truncate">Sewa hotel & penginapan</p>
+          </div>
+
         </div>
 
         {/* WORKSPACE OPERATIONS FILTER TOOLBAR */}
