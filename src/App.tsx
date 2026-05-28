@@ -44,6 +44,7 @@ import { TarifModal } from "./components/TarifModal";
 import { PegawaiModal } from "./components/PegawaiModal";
 import { PerjalananFormModal } from "./components/PerjalananFormModal";
 import * as XLSX from "xlsx";
+import { showToast, confirmAlert } from "./lib/swal";
 
 // --- PRE-LOADED DEMO DATA FOR REALISTIC PORTAL LOOK UP ON MOUNT ---
 const INITIAL_PROVINSI: Provinsi[] = [
@@ -485,9 +486,38 @@ export default function App() {
       setPerjalananList((prev) =>
         prev.map((item) => (item.id === singleItem.id ? { ...singleItem } : item))
       );
+      showToast("Data Perjalanan Dinas berhasil diperbarui!", "success");
     } else {
       // Multi employees are inserted
       setPerjalananList((prev) => [...prev, ...records]);
+      showToast(`Berhasil menyimpan ${records.length} data Perjalanan Dinas!`, "success");
+    }
+  };
+
+  const handleDeletePerjalanan = async (item: PerjalananDinas) => {
+    const pegawaiName = pegawaiList.find((p) => p.id === item.pegawaiId)?.nama || "Pegawai";
+    const isConfirmed = await confirmAlert(
+      "Hapus Perjalanan Dinas?",
+      `Apakah Anda yakin ingin menghapus data perjalanan dinas untuk "${pegawaiName}" (BKU: ${item.nomorBku || "-"})?`
+    );
+    if (isConfirmed) {
+      setPerjalananList((prev) => prev.filter((it) => it.id !== item.id));
+      setSelectedRowIds((prev) => prev.filter((rowId) => rowId !== item.id));
+      showToast("Data Perjalanan Dinas berhasil dihapus", "info");
+    }
+  };
+
+  const handleDeleteBulk = async () => {
+    if (selectedRowIds.length === 0) return;
+    const isConfirmed = await confirmAlert(
+      "Hapus Data Terpilih?",
+      `Apakah Anda yakin ingin menghapus ${selectedRowIds.length} data perjalanan dinas yang dicentang secara permanen?`
+    );
+    if (isConfirmed) {
+      setPerjalananList((prev) => prev.filter((item) => !selectedRowIds.includes(item.id)));
+      setSelectedRowIds([]);
+      setCurrentPage(1);
+      showToast(`Berhasil menghapus ${selectedRowIds.length} data perjalanan dinas`, "info");
     }
   };
 
@@ -732,6 +762,7 @@ export default function App() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data Perjalanan Dinas");
     XLSX.writeFile(workbook, `Data_Perjalanan_Dinas_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast("Data Perjalanan Dinas Berhasil Diekspor!", "success");
   };
 
   // --- DATA GRAPH CALCULATIONS & STATISTICS ---
@@ -881,45 +912,18 @@ export default function App() {
           
           {/* Bulkactions */}
           <div className="flex items-center gap-2 shrink-0">
-            {deleteConfirmBulk ? (
-              <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-lg p-1.5 select-none animate-bounce">
-                <span className="text-[10.5px] text-rose-700 font-extrabold px-1.5">
-                  Hapus {selectedRowIds.length} data?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPerjalananList((prev) => prev.filter((item) => !selectedRowIds.includes(item.id)));
-                    setSelectedRowIds([]);
-                    setCurrentPage(1);
-                    setDeleteConfirmBulk(false);
-                  }}
-                  className="px-2.5 py-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded font-extrabold text-[10.5px] cursor-pointer transition-all shadow-sm active:scale-95"
-                >
-                  Ya, Hapus
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteConfirmBulk(false)}
-                  className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-bold text-[10.5px] cursor-pointer transition-all"
-                >
-                  Batal
-                </button>
-              </div>
-            ) : (
-              <button
-                id="btn-delete-selected"
-                disabled={selectedRowIds.length === 0}
-                onClick={() => setDeleteConfirmBulk(true)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 select-none border ${
-                  selectedRowIds.length > 0
-                    ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-300 shadow-2xs hover:shadow-xs hover:scale-[101%] active:scale-[98%] cursor-pointer"
-                    : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed opacity-60"
-                }`}
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Hapus Terpilih ({selectedRowIds.length})
-              </button>
-            )}
+            <button
+              id="btn-delete-selected"
+              disabled={selectedRowIds.length === 0}
+              onClick={handleDeleteBulk}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 select-none border ${
+                selectedRowIds.length > 0
+                  ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-300 shadow-2xs hover:shadow-xs hover:scale-[101%] active:scale-[98%] cursor-pointer"
+                  : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed opacity-60"
+              }`}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Hapus Terpilih ({selectedRowIds.length})
+            </button>
             
             <button
               id="btn-export-excel"
@@ -1265,49 +1269,22 @@ export default function App() {
                         {/* Actions sticky right shadow */}
                         <td className="px-2 py-1.5 text-center sticky right-0 bg-white shadow-[-3px_0_5px_rgba(0,0,0,0.035)]">
                           <div className="flex justify-center gap-1.5 items-center min-h-[24px]">
-                            {deleteConfirmRowId === item.id ? (
-                              <div className="flex gap-1 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPerjalananList((prev) => prev.filter((it) => it.id !== item.id));
-                                    setSelectedRowIds((prev) => prev.filter((rowId) => rowId !== item.id));
-                                    setDeleteConfirmRowId(null);
-                                  }}
-                                  className="px-2.5 py-1 bg-gradient-to-r from-red-600 to-rose-600 font-black text-white hover:from-red-700 hover:to-rose-700 rounded-md text-[10px] cursor-pointer shadow-xs active:scale-95"
-                                  title="Konfirmasi Hapus"
-                                >
-                                  Yakin?
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setDeleteConfirmRowId(null)}
-                                  className="px-2 py-1 bg-slate-100 font-bold text-slate-500 hover:bg-slate-200 rounded-md text-[10px] cursor-pointer"
-                                  title="Batal Hapus"
-                                >
-                                  Batal
-                                </button>
-                              </div>
-                            ) : (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenFormEdit(item)}
-                                  className="px-2.5 py-1 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-md border border-sky-200 text-[10.5px] font-bold cursor-pointer transition-all hover:scale-[104%] hover:shadow-2xs active:scale-[96%]"
-                                  title="Edit Data"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setDeleteConfirmRowId(item.id)}
-                                  className="px-2.5 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-md border border-rose-200 text-[10.5px] font-extrabold cursor-pointer transition-all hover:scale-[104%] hover:shadow-2xs active:scale-[96%]"
-                                  title="Mulai Hapus Data"
-                                >
-                                  Hapus
-                                </button>
-                              </>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenFormEdit(item)}
+                              className="px-2.5 py-1 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-md border border-sky-200 text-[10.5px] font-bold cursor-pointer transition-all hover:scale-[104%] hover:shadow-2xs active:scale-[96%]"
+                              title="Edit Data"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePerjalanan(item)}
+                              className="px-2.5 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-md border border-rose-200 text-[10.5px] font-extrabold cursor-pointer transition-all hover:scale-[104%] hover:shadow-2xs active:scale-[96%]"
+                              title="Hapus Data"
+                            >
+                              Hapus
+                            </button>
                           </div>
                         </td>
                       </tr>

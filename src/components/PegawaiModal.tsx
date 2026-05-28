@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { X, Users, UserPlus, Trash2, Search, ChevronLeft, ChevronRight, Save, Key, Download, UploadCloud, FileSpreadsheet } from "lucide-react";
 import { Pegawai } from "../types";
 import * as XLSX from "xlsx";
+import { showToast, confirmAlert, showSuccessAlert } from "../lib/swal";
 
 interface PegawaiModalProps {
   id: string;
@@ -38,15 +39,19 @@ export function PegawaiModal({
 
   const handleSavePegawai = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nama.trim() || !nip.trim()) return;
+    if (!nama.trim() || !nip.trim()) {
+      showToast("Nama dan NIP wajib diisi!", "warning");
+      return;
+    }
 
+    const trimmedNama = nama.trim();
     if (editingId) {
       setPegawaiList((prev) =>
         prev.map((p) =>
           p.id === editingId
             ? {
                 ...p,
-                nama: nama.trim(),
+                nama: trimmedNama,
                 nip: nip.trim(),
                 pangkat: pangkat.trim() || "-",
                 jabatan: jabatan.trim() || "-",
@@ -55,16 +60,18 @@ export function PegawaiModal({
         )
       );
       setEditingId(null);
+      showToast("Data Pegawai berhasil diperbarui!", "success");
     } else {
       const newPegawai: Pegawai = {
         id: "pegawai-" + Date.now(),
-        nama: nama.trim(),
+        nama: trimmedNama,
         nip: nip.trim(),
         pangkat: pangkat.trim() || "-",
         jabatan: jabatan.trim() || "-",
       };
 
       setPegawaiList((prev) => [...prev, newPegawai]);
+      showToast(`Pegawai "${trimmedNama}" berhasil didaftarkan!`, "success");
     }
 
     // Reset fields
@@ -74,10 +81,18 @@ export function PegawaiModal({
     setJabatan("");
   };
 
-  const handleDelete = (idToDelete: string) => {
-    setPegawaiList((prev) => prev.filter((p) => p.id !== idToDelete));
-    if (editingId === idToDelete) {
-      handleCancelEdit();
+  const handleDelete = async (idToDelete: string) => {
+    const pName = pegawaiList.find(p => p.id === idToDelete)?.nama || "";
+    const isConfirmed = await confirmAlert(
+      "Hapus Pegawai?",
+      `Apakah Anda yakin ingin menghapus data pegawai "${pName}"?`
+    );
+    if (isConfirmed) {
+      setPegawaiList((prev) => prev.filter((p) => p.id !== idToDelete));
+      if (editingId === idToDelete) {
+        handleCancelEdit();
+      }
+      showToast("Data Pegawai berhasil dihapus", "info");
     }
   };
 
@@ -209,9 +224,12 @@ export function PegawaiModal({
         
         setUploadSuccess(logMsg);
         setPegawaiList((prev) => [...prev, ...filteredImports]);
+        showSuccessAlert("Impor Pegawai Berhasil", logMsg);
       } catch (err: any) {
         console.error(err);
-        setUploadError(err.message || "Gagal menguraikan file excel pegawai.");
+        const errMsg = err.message || "Gagal menguraikan file excel pegawai.";
+        setUploadError(errMsg);
+        showToast(errMsg, "error");
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
@@ -219,6 +237,7 @@ export function PegawaiModal({
 
     reader.onerror = () => {
       setUploadError("Gagal membaca file.");
+      showToast("Gagal membaca file excel", "error");
     };
 
     reader.readAsBinaryString(file);

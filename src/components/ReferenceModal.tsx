@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, Settings, Plus, Trash2, ChevronLeft, ChevronRight, Save, Search } from "lucide-react";
 import { SearchableSelect } from "./SearchableSelect";
+import { showToast, confirmAlert } from "../lib/swal";
 import {
   Provinsi,
   KabKota,
@@ -109,50 +110,80 @@ export function ReferenceModal({
   const handleSaveProvinsi = (e: React.FormEvent) => {
     e.preventDefault();
     if (!provinsiInput.trim()) return;
+    const namaProv = provinsiInput.trim();
     const newProv: Provinsi = {
       id: "prov-" + Date.now(),
-      nama: provinsiInput.trim(),
+      nama: namaProv,
     };
     setProvinsiList((prev) => [...prev, newProv]);
     setProvinsiInput("");
+    showToast(`Provinsi "${namaProv}" berhasil disimpan!`, "success");
   };
 
-  const handleDeleteProvinsi = (idToDelete: string) => {
-    setProvinsiList((prev) => prev.filter((item) => item.id !== idToDelete));
-    setKabKotaList((prev) => prev.filter((item) => item.provinsiId !== idToDelete));
+  const handleDeleteProvinsi = async (idToDelete: string) => {
+    const provName = provinsiList.find(p => p.id === idToDelete)?.nama || "";
+    const isConfirmed = await confirmAlert(
+      "Hapus Provinsi?",
+      `Apakah Anda yakin ingin menghapus Provinsi "${provName}"? Kabupaten/Kota di dalamnya juga akan ikut terhapus.`
+    );
+    if (isConfirmed) {
+      setProvinsiList((prev) => prev.filter((item) => item.id !== idToDelete));
+      setKabKotaList((prev) => prev.filter((item) => item.provinsiId !== idToDelete));
+      showToast("Provinsi berhasil dihapus", "info");
+    }
   };
 
   // Regency/City Actions
   const handleSaveKabKota = (e: React.FormEvent) => {
     e.preventDefault();
     if (!kabKotaProvinceId || !kabKotaInput.trim()) return;
+    const namaKab = kabKotaInput.trim();
     const newKabKota: KabKota = {
       id: "kabkota-" + Date.now(),
       provinsiId: kabKotaProvinceId,
-      nama: kabKotaInput.trim(),
+      nama: namaKab,
     };
     setKabKotaList((prev) => [...prev, newKabKota]);
     setKabKotaInput("");
+    showToast(`Kab/Kota "${namaKab}" berhasil disimpan!`, "success");
   };
 
-  const handleDeleteKabKota = (idToDelete: string) => {
-    setKabKotaList((prev) => prev.filter((item) => item.id !== idToDelete));
+  const handleDeleteKabKota = async (idToDelete: string) => {
+    const kabName = kabKotaList.find(k => k.id === idToDelete)?.nama || "";
+    const isConfirmed = await confirmAlert(
+      "Hapus Kabupaten/Kota?",
+      `Apakah Anda yakin ingin menghapus "${kabName}"?`
+    );
+    if (isConfirmed) {
+      setKabKotaList((prev) => prev.filter((item) => item.id !== idToDelete));
+      showToast("Kabupaten/Kota berhasil dihapus", "info");
+    }
   };
 
   // Travel Type Actions
   const handleSaveJenisPerjalanan = (e: React.FormEvent) => {
     e.preventDefault();
     if (!jenisPerjalananInput.trim()) return;
+    const namaJP = jenisPerjalananInput.trim();
     const newJp: JenisPerjalanan = {
       id: "jp-" + Date.now(),
-      nama: jenisPerjalananInput.trim(),
+      nama: namaJP,
     };
     setJenisPerjalananList((prev) => [...prev, newJp]);
     setJenisPerjalananInput("");
+    showToast(`Jenis Perjalanan "${namaJP}" berhasil disimpan!`, "success");
   };
 
-  const handleDeleteJenisPerjalanan = (idToDelete: string) => {
-    setJenisPerjalananList((prev) => prev.filter((item) => item.id !== idToDelete));
+  const handleDeleteJenisPerjalanan = async (idToDelete: string) => {
+    const jpName = jenisPerjalananList.find(j => j.id === idToDelete)?.nama || "";
+    const isConfirmed = await confirmAlert(
+      "Hapus Jenis Perjalanan?",
+      `Apakah Anda yakin ingin menghapus "${jpName}"?`
+    );
+    if (isConfirmed) {
+      setJenisPerjalananList((prev) => prev.filter((item) => item.id !== idToDelete));
+      showToast("Jenis Perjalanan berhasil dihapus", "info");
+    }
   };
 
   // Sub Activity Actions
@@ -167,10 +198,19 @@ export function ReferenceModal({
     setSubKegiatanList((prev) => [...prev, newSub]);
     setSubKegiatanKode("");
     setSubKegiatanNama("");
+    showToast("Sub Kegiatan berhasil disimpan!", "success");
   };
 
-  const handleDeleteSubKegiatan = (idToDelete: string) => {
-    setSubKegiatanList((prev) => prev.filter((item) => item.id !== idToDelete));
+  const handleDeleteSubKegiatan = async (idToDelete: string) => {
+    const subName = subKegiatanList.find(s => s.id === idToDelete)?.nama || "";
+    const isConfirmed = await confirmAlert(
+      "Hapus Sub Kegiatan?",
+      `Apakah Anda yakin ingin menghapus "${subName}"?`
+    );
+    if (isConfirmed) {
+      setSubKegiatanList((prev) => prev.filter((item) => item.id !== idToDelete));
+      showToast("Sub Kegiatan berhasil dihapus", "info");
+    }
   };
 
   // Kodering Actions
@@ -185,57 +225,98 @@ export function ReferenceModal({
     setKoderingList((prev) => [...prev, newKod]);
     setKoderingKode("");
     setKoderingNama("");
+    showToast("Kodering Belanja berhasil disimpan!", "success");
   };
 
-  const handleDeleteKodering = (idToDelete: string) => {
-    setKoderingList((prev) => prev.filter((item) => item.id !== idToDelete));
+  const handleDeleteKodering = async (idToDelete: string) => {
+    const kodName = koderingList.find(k => k.id === idToDelete)?.nama || "";
+    const isConfirmed = await confirmAlert(
+      "Hapus Kodering?",
+      `Apakah Anda yakin ingin menghapus "${kodName}"?`
+    );
+    if (isConfirmed) {
+      setKoderingList((prev) => prev.filter((item) => item.id !== idToDelete));
+      showToast("Kodering berhasil dihapus", "info");
+    }
   };
 
   // Fuel Actions
   const handleSaveBBM = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bbmNama.trim()) return;
+    const namaBBM = bbmNama.trim();
     const newBBM: JenisBBM = {
       id: "bbm-" + Date.now(),
-      nama: bbmNama.trim(),
+      nama: namaBBM,
       hargaPerLiter: bbmHarga || 0,
     };
     setJenisBBMList((prev) => [...prev, newBBM]);
     setBbmNama("");
     setBbmHarga(0);
+    showToast(`BBM "${namaBBM}" berhasil disimpan!`, "success");
   };
 
-  const handleDeleteBBM = (idToDelete: string) => {
-    setJenisBBMList((prev) => prev.filter((item) => item.id !== idToDelete));
+  const handleDeleteBBM = async (idToDelete: string) => {
+    const bbmName = jenisBBMList.find(b => b.id === idToDelete)?.nama || "";
+    const isConfirmed = await confirmAlert(
+      "Hapus Bahan Bakar?",
+      `Apakah Anda yakin ingin menghapus "${bbmName}"?`
+    );
+    if (isConfirmed) {
+      setJenisBBMList((prev) => prev.filter((item) => item.id !== idToDelete));
+      showToast("Jenis BBM berhasil dihapus", "info");
+    }
   };
 
   // Transport Actions
   const handleSaveTransportasi = (e: React.FormEvent) => {
     e.preventDefault();
     if (!transportasiInput.trim()) return;
+    const namaTr = transportasiInput.trim();
     const newTr: JenisTransportasi = {
       id: "tr-" + Date.now(),
-      nama: transportasiInput.trim(),
+      nama: namaTr,
     };
     setJenisTransportasiList((prev) => [...prev, newTr]);
     setTransportasiInput("");
+    showToast(`Transportasi "${namaTr}" berhasil disimpan!`, "success");
   };
 
-  const handleDeleteTransportasi = (idToDelete: string) => {
-    setJenisTransportasiList((prev) => prev.filter((item) => item.id !== idToDelete));
+  const handleDeleteTransportasi = async (idToDelete: string) => {
+    const trName = jenisTransportasiList.find(t => t.id === idToDelete)?.nama || "";
+    const isConfirmed = await confirmAlert(
+      "Hapus Alat Transportasi?",
+      `Apakah Anda yakin ingin menghapus "${trName}"?`
+    );
+    if (isConfirmed) {
+      setJenisTransportasiList((prev) => prev.filter((item) => item.id !== idToDelete));
+      showToast("Jenis Transportasi berhasil dihapus", "info");
+    }
   };
 
   // Tahun Actions
   const handleSaveTahun = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanTahun = tahunInput.trim();
-    if (!cleanTahun || tahunList.includes(cleanTahun)) return;
+    if (!cleanTahun) return;
+    if (tahunList.includes(cleanTahun)) {
+      showToast(`Tahun ${cleanTahun} sudah terdaftar!`, "warning");
+      return;
+    }
     setTahunList((prev) => [...prev, cleanTahun].sort((a, b) => Number(a) - Number(b)));
     setTahunInput("");
+    showToast(`Tahun Dinas ${cleanTahun} berhasil disimpan!`, "success");
   };
 
-  const handleDeleteTahun = (valToDelete: string) => {
-    setTahunList((prev) => prev.filter((item) => item !== valToDelete));
+  const handleDeleteTahun = async (valToDelete: string) => {
+    const isConfirmed = await confirmAlert(
+      "Hapus Tahun Anggaran?",
+      `Apakah Anda yakin ingin menghapus Tahun "${valToDelete}"?`
+    );
+    if (isConfirmed) {
+      setTahunList((prev) => prev.filter((item) => item !== valToDelete));
+      showToast("Tahun berhasil dihapus", "info");
+    }
   };
 
   // Helper filters

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, Coins, Plus, Trash2, Edit2, Search, ChevronLeft, ChevronRight, Save, ReceiptIndianRupee } from "lucide-react";
 import { SearchableSelect } from "./SearchableSelect";
 import { Provinsi, KabKota, JenisPerjalanan, TarifUangHarian } from "../types";
+import { showToast, confirmAlert } from "../lib/swal";
 
 const formatRupiah = (val: number | string | null | undefined): string => {
   if (val === undefined || val === null || val === "" || isNaN(Number(val))) return "";
@@ -80,6 +81,7 @@ export function TarifModal({
         )
       );
       setEditingId(null);
+      showToast("Tarif Berhasil Diperbarui!", "success");
     } else {
       // Add new
       const newTarif: TarifUangHarian = {
@@ -91,6 +93,7 @@ export function TarifModal({
         tarif: tarifNominal,
       };
       setTarifList((prev) => [...prev, newTarif]);
+      showToast("Tarif Berhasil Ditambahkan!", "success");
     }
 
     // Reset fields partial
@@ -106,11 +109,18 @@ export function TarifModal({
     setTarifNominal(item.tarif);
   };
 
-  const handleDelete = (idToDelete: string) => {
-    setTarifList((prev) => prev.filter((t) => t.id !== idToDelete));
-    if (editingId === idToDelete) {
-      setEditingId(null);
-      setTarifNominal(0);
+  const handleDelete = async (idToDelete: string) => {
+    const isConfirmed = await confirmAlert(
+      "Hapus Tarif?",
+      "Apakah Anda yakin ingin menghapus tarif uang harian ini?"
+    );
+    if (isConfirmed) {
+      setTarifList((prev) => prev.filter((t) => t.id !== idToDelete));
+      if (editingId === idToDelete) {
+        setEditingId(null);
+        setTarifNominal(0);
+      }
+      showToast("Tarif berhasil dihapus", "info");
     }
   };
 
