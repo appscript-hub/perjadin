@@ -1,0 +1,6 @@
+{
+  "name": "SI Perjalanan Dinas",
+  "description": "Sistem Informasi Manajemen dan Input Data Perjalanan Dinas Mewah, Modern dan Profesional.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
