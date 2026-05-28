@@ -1,8 +1,10 @@
 import React, { useState, useRef } from "react";
-import { X, Users, UserPlus, Trash2, Search, ChevronLeft, ChevronRight, Save, Key, Download, UploadCloud, FileSpreadsheet } from "lucide-react";
+import { X, Users, UserPlus, Trash2, Search, ChevronLeft, ChevronRight, Save, Key, Download, UploadCloud, FileSpreadsheet, FileText } from "lucide-react";
 import { Pegawai } from "../types";
 import * as XLSX from "xlsx";
 import { showToast, confirmAlert, showSuccessAlert } from "../lib/swal";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface PegawaiModalProps {
   id: string;
@@ -33,7 +35,53 @@ export function PegawaiModal({
   // Search & Pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 5;
+
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Header info
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("DAFTAR DATA PEGAWAI", 14, 15);
+      doc.setFontSize(9);
+      doc.setFont("Helvetica", "normal");
+      doc.text("Sistem Informasi Perjalanan Dinas (PERJADIN)", 14, 20);
+      doc.setDrawColor(200, 200, 200);
+      doc.line(14, 23, 196, 23);
+      
+      const tableData = filteredPegawaiList.map((item, index) => [
+        index + 1,
+        item.nama,
+        item.nip,
+        item.pangkat || "-",
+        item.jabatan || "-"
+      ]);
+      
+      autoTable(doc, {
+        startY: 27,
+        head: [["No", "Nama Pegawai", "NIP", "Pangkat / Golongan", "Jabatan"]],
+        body: tableData,
+        theme: "striped",
+        headStyles: { fillColor: [15, 23, 42] }, // Slate-900 look
+        styles: { fontSize: 8.5, font: "Helvetica" },
+        columnStyles: {
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: 55 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 40 },
+          4: { cellWidth: 40 }
+        }
+      });
+      
+      doc.save(`Daftar_Pegawai_${new Date().toISOString().slice(0, 10)}.pdf`);
+      showToast("Data Pegawai Berhasil Diekspor ke PDF!", "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Gagal mengekspor PDF", "error");
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -404,7 +452,7 @@ export function PegawaiModal({
           {/* Table list column right 3 */}
           <div className="md:col-span-3 flex flex-col justify-between border border-slate-200 rounded p-2.5 bg-white">
             <div>
-              {/* Search Box */}
+              {/* Search Box & PDF Export */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
@@ -429,6 +477,14 @@ export function PegawaiModal({
                     </button>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={handleExportPDF}
+                  className="h-8 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10.5px] font-bold rounded flex items-center gap-1 cursor-pointer transition-all hover:scale-[102%] hover:shadow-2xs active:scale-[98%] shrink-0 select-none font-sans"
+                  title="Ekspor Data Pegawai ke PDF"
+                >
+                  <FileText className="w-3.5 h-3.5 text-rose-500 font-bold" /> Ekspor PDF
+                </button>
               </div>
 
               {/* Data Table */}

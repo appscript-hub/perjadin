@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { X, Coins, Plus, Trash2, Edit2, Search, ChevronLeft, ChevronRight, Save, ReceiptIndianRupee } from "lucide-react";
+import { X, Coins, Plus, Trash2, Edit2, Search, ChevronLeft, ChevronRight, Save, ReceiptIndianRupee, FileText } from "lucide-react";
 import { SearchableSelect } from "./SearchableSelect";
 import { Provinsi, KabKota, JenisPerjalanan, TarifUangHarian } from "../types";
 import { showToast, confirmAlert } from "../lib/swal";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const formatRupiah = (val: number | string | null | undefined): string => {
   if (val === undefined || val === null || val === "" || isNaN(Number(val))) return "";
@@ -51,7 +53,58 @@ export function TarifModal({
   // Search and Pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 5;
+
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Header info
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("REFERENSI TARIF UANG HARIAN", 14, 15);
+      doc.setFontSize(9);
+      doc.setFont("Helvetica", "normal");
+      doc.text("Sistem Informasi Perjalanan Dinas (PERJADIN)", 14, 20);
+      doc.setDrawColor(200, 200, 200);
+      doc.line(14, 23, 196, 23);
+      
+      const tableData = filteredTarifList.map((item, index) => {
+        const provName = provinsiList.find((p) => p.id === item.provinsiId)?.nama || "-";
+        const cityName = kabKotaList.find((c) => c.id === item.kabKotaId)?.nama || "-";
+        const jpName = jenisPerjalananList.find((j) => j.id === item.jenisPerjalananId)?.nama || "-";
+        return [
+          index + 1,
+          item.tahun,
+          `${provName} - ${cityName}`,
+          jpName,
+          `Rp ${item.tarif.toLocaleString("id-ID")}`
+        ];
+      });
+      
+      autoTable(doc, {
+        startY: 27,
+        head: [["No", "Tahun", "Provinsi / Kota", "Jenis Perjalanan", "Tarif"]],
+        body: tableData,
+        theme: "striped",
+        headStyles: { fillColor: [15, 23, 42] }, // Slate-900 look
+        styles: { fontSize: 8.5, font: "Helvetica" },
+        columnStyles: {
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: 15, halign: "center" },
+          2: { cellWidth: 70 },
+          3: { cellWidth: 50 },
+          4: { cellWidth: 40, halign: "right" }
+        }
+      });
+      
+      doc.save(`Referensi_Tarif_${new Date().toISOString().slice(0, 10)}.pdf`);
+      showToast("Referensi Tarif Berhasil Diekspor ke PDF!", "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Gagal mengekspor PDF", "error");
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -266,7 +319,7 @@ export function TarifModal({
           {/* Table Side - Right cols 3 */}
           <div className="md:col-span-3 flex flex-col justify-between border border-slate-200 rounded p-2.5 bg-white">
             <div>
-              {/* Search tool of rates */}
+              {/* Search tool of rates & PDF Export */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
@@ -291,6 +344,14 @@ export function TarifModal({
                     </button>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={handleExportPDF}
+                  className="h-8 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10.5px] font-bold rounded flex items-center gap-1 cursor-pointer transition-all hover:scale-[102%] hover:shadow-2xs active:scale-[98%] shrink-0 select-none font-sans"
+                  title="Ekspor Referensi Tarif ke PDF"
+                >
+                  <FileText className="w-3.5 h-3.5 text-rose-500 font-bold" /> Ekspor PDF
+                </button>
               </div>
 
               {/* Rates Table Grid */}
